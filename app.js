@@ -94,7 +94,7 @@ const App = {
 
   renderBallot() {
     const b = this.state.data;
-    if (!b) return '<div class="container"><p>Загрузка...</p></div>';
+    if (!b || !b.questions) return '<div class="container"><p>Загрузка...</p></div>';
     const idx = this.state.params.idx || 0, q = b.questions[idx], total = b.questions.length;
     const answers = this.state.params.answers || {}, current = answers[q.id];
     return `${this.renderNav()}<div class="container"><h2>${this.esc(b.voting.title)}</h2><p class="muted mb">Вы ответили на ${Object.keys(answers).length} из ${total}</p><div class="progress mb"><div class="progress-bar" style="width:${Object.keys(answers).length / total * 100}%"></div></div><div class="card"><p class="muted">ВОПРОС ${idx + 1} ИЗ ${total}</p><h3 class="mt">${this.esc(q.text)}</h3>${q.project ? '<p class="muted mt">Проект решения: ' + this.esc(q.project) + '</p>' : ''}<div class="row mt"><button class="btn btn-vote for ${current === 'for' ? 'selected' : ''}" data-vote="for" data-qid="${q.id}">✅ ЗА</button><button class="btn btn-vote against ${current === 'against' ? 'selected' : ''}" data-vote="against" data-qid="${q.id}">❌ ПРОТИВ</button><button class="btn btn-vote abstain ${current === 'abstain' ? 'selected' : ''}" data-vote="abstain" data-qid="${q.id}">⬜ ВОЗД.</button></div></div><div class="flex between"><button class="btn btn-secondary" data-action="ballotPrev" ${idx === 0 ? 'disabled' : ''}>← Назад</button>${idx < total - 1 ? `<button class="btn btn-primary" data-action="ballotNext" ${!current ? 'disabled' : ''}>Далее →</button>` : `<button class="btn btn-primary" data-action="ballotFinish" ${!current ? 'disabled' : ''}>Проверить и отправить</button>`}</div></div>`;
@@ -102,6 +102,7 @@ const App = {
 
   renderConfirm() {
     const { answers, questions } = this.state.params;
+    if (!questions) return '<div class="container"><p>Ошибка: вопросы не найдены</p></div>';
     const rows = questions.map((q, i) => {
       const a = answers[q.id], label = a === 'for' ? '✅ ЗА' : a === 'against' ? '❌ ПРОТИВ' : '⬜ ВОЗД.';
       return `<tr><td>${i + 1}</td><td>${this.esc(q.text)}</td><td>${label}</td></tr>`;
@@ -268,7 +269,7 @@ const App = {
           this.navigate('ballot'); break;
         case 'ballotNext': this.state.params.idx++; this.render(); break;
         case 'ballotPrev': this.state.params.idx--; this.render(); break;
-        case 'ballotFinish': this.state.params.questions = this.state.data.questions; this.navigate('confirm'); break;
+        case 'ballotFinish': this.state.params.questions = this.state.data.questions; this.state.params.votingTitle = this.state.data.voting.title; this.navigate('confirm', this.state.params); break;
         case 'confirmBack': this.state.params.showCodeModal = false; this.navigate('ballot', this.state.params); break;
         case 'confirmSubmit':
           await this.call('signature.initiate', { votingId: this.state.params.votingId });
