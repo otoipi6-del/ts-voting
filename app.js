@@ -9,13 +9,21 @@ const App = {
 
   call(action, payload) {
     const body = { action, payload: payload || {}, token: this.state.session ? this.state.session.token : null };
-    return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    return fetch(API_URL, { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json; charset=utf-8' }, 
+      body: JSON.stringify(body) 
+    })
       .then(r => r.json())
       .then(res => { if (res && res.ok) return res.data; throw new Error(res && res.error || 'Ошибка сервера'); });
   },
 
   callPublic(action, payload) {
-    return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, payload: payload || {} }) })
+    return fetch(API_URL, { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json; charset=utf-8' }, 
+      body: JSON.stringify({ action, payload: payload || {} }) 
+    })
       .then(r => r.json())
       .then(res => { if (res && res.ok) return res.data; throw new Error(res && res.error || 'Ошибка сервера'); });
   },
