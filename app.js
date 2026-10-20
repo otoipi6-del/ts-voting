@@ -88,7 +88,7 @@ const App = {
     const d = this.state.data || {};
     const active = (d.active || []).map(v => {
       const percent = v.totalUsers ? Math.round(v.votedCount / v.totalUsers * 100) : 0;
-      return `<div class="card"><h3>${this.esc(v.title)}</h3><p class="muted">До ${this.formatDate(v.end_date)}</p><div class="progress mt mb"><div class="progress-bar" style="width:${percent}%"></div></div><p class="muted mb">Проголосовало ${v.votedCount} из ${v.totalUsers}</p><button class="btn ${v.voted ? 'btn-secondary' : 'btn-primary'} btn-block" data-action="${v.voted ? 'results' : 'vote'}" data-id="${v.id}">${v.voted ? 'Посмотреть результаты' : 'Перейти к голосованию'}</button></div>`;
+      return `<div class="card"><h3>${this.esc(v.title)}</h3><p class="muted">До ${this.formatDate(v.end_date)}</p><div class="progress mt mb"><div class="progress-bar" style="width:${percent}%"></div></div><p class="muted mb">Проголосовало ${v.votedCount} из ${v.totalUsers}</p><button class="btn btn-primary btn-block" data-action="${v.voted ? 'results' : 'vote'}" data-id="${v.id}">${v.voted ? 'Посмотреть результаты' : 'Открыть'}</button></div>`;
     }).join('') || '<p class="muted">Активных голосований нет</p>';
     return `${this.renderNav()}<div class="container"><h1>Здравствуйте, ${this.esc(d.user ? d.user.fio : '')}!</h1><h2>Активные голосования</h2>${active}</div>`;
   },
