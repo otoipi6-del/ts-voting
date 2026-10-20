@@ -129,7 +129,7 @@ const App = {
   renderInitiator() {
     const list = this.state.data || [];
     const items = list.map(v => `<div class="card"><h3>${this.esc(v.title)} <span class="badge ${v.status === 'active' ? 'badge-success' : v.status === 'draft' ? 'badge-muted' : 'badge-warn'}">${v.status}</span></h3><p class="muted">${this.formatDate(v.start_date)} — ${this.formatDate(v.end_date)}</p><p class="muted">Проголосовало: ${v.votedCount} из ${v.totalUsers}</p><div class="flex mt">${v.status === 'draft' ? `<button class="btn btn-primary btn-sm" data-action="publish" data-id="${v.id}">Опубликовать</button>` : ''}${v.status === 'active' ? `<button class="btn btn-primary btn-sm" data-action="monitor" data-id="${v.id}">Мониторинг</button>` : ''}${v.status === 'finished' ? `<button class="btn btn-secondary btn-sm" data-action="protocol" data-id="${v.id}">Протокол</button>` : ''}</div></div>`).join('');
-    return `${this.renderNav()}<div class="container"><h1>Панель инициатора</h1><button class="btn btn-primary btn-block mb" data-action="createVoting">+ Создать голосование</button>${items || '<p class="muted">Нет голосований</p>'}</div>`;
+    return `${this.renderNav()}<div class="container"><h1>Управление голосованиями</h1><button class="btn btn-primary btn-block mb" data-action="createVoting">+ Создать голосование</button>${items || '<p class="muted">Нет голосований</p>'}</div>`;
   },
 
   renderInitiatorCreate() {
@@ -153,7 +153,7 @@ const App = {
   renderAdminVotings() {
     const list = this.state.data || [];
     const items = list.map(v => `<div class="card"><h3>${this.esc(v.title)} <span class="badge ${v.status === 'active' ? 'badge-success' : v.status === 'draft' ? 'badge-muted' : 'badge-warn'}">${v.status}</span></h3><p class="muted">${this.formatDate(v.start_date)} — ${this.formatDate(v.end_date)}</p><p class="muted">Проголосовало: ${v.votedCount} из ${v.totalUsers}</p><div class="flex mt">${v.status === 'draft' ? `<button class="btn btn-primary btn-sm" data-action="publish" data-id="${v.id}">Опубликовать</button>` : ''}${v.status === 'active' ? `<button class="btn btn-primary btn-sm" data-action="monitor" data-id="${v.id}">Мониторинг</button>` : ''}${v.status === 'finished' ? `<button class="btn btn-secondary btn-sm" data-action="protocol" data-id="${v.id}">Протокол</button>` : ''}</div></div>`).join('');
-    return `${this.renderNav()}<div class="container"><button class="btn btn-secondary btn-sm mb" data-action="adminBack">← Назад</button><h1>Голосования</h1><button class="btn btn-primary btn-block mb" data-action="createVoting">+ Создать голосование</button>${items || '<p class="muted">Нет голосований</p>'}</div>`;
+    return `${this.renderNav()}<div class="container"><button class="btn btn-secondary btn-sm mb" data-action="adminBack">← Назад</button><h1>Управление голосованиями</h1><button class="btn btn-primary btn-block mb" data-action="createVoting">+ Создать голосование</button>${items || '<p class="muted">Нет голосований</p>'}</div>`;
   },
 
   renderAdminRequests() {
