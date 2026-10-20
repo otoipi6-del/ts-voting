@@ -670,4 +670,363 @@ const App = {
       el.addEventListener('click', () => self.handleAction(el.dataset.action, el.dataset));
     });
     document.querySelectorAll('[data-vote]').forEach(el => {
-      el.addEventListener('click', ()
+      el.addEventListener('click', () => self.handleVote(el.dataset.vote, el.dataset.qid));
+    });
+    document.querySelectorAll('[data-qfield]').forEach(el => {
+      el.addEventListener('input', () => {
+        const idx = parseInt(el.dataset.idx, 10);
+        const field = el.dataset.qfield;
+        if (!self.state.data) self.state.data = { questions: [] };
+        self.state.data.questions[idx] = self.state.data.questions[idx] || {};
+        self.state.data.questions[idx][field] = el.value;
+      });
+    });
+    if (this.state.page === 'login') {
+      this.initTelegramWidget();
+    }
+    if (this.state.page === 'registerStatus') {
+      this.checkRegisterStatus();
+    }
+  },
+
+  initTelegramWidget() {
+    const container = document.getElementById('telegram-widget-container');
+    if (!container) return;
+    this.callPublic('telegram.getLoginUrl').then(cfg => {
+      container.innerHTML = '';
+      const script = document.createElement('script');
+      script.async = true;
+      script.src = 'https://telegram.org/js/telegram-widget.js?22';
+      script.setAttribute('data-telegram-login', cfg.botUsername);
+      script.setAttribute('data-size', 'large');
+      script.setAttribute('data-radius', '8');
+      script.setAttribute('data-request-access', 'write');
+      script.setAttribute('data-userpic', 'false');
+      script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+      container.appendChild(script);
+    }).catch(err => {
+      container.innerHTML = '<p class="error">Не удалось загрузить Telegram-виджет: ' + this.esc(err.message) + '</p>';
+    });
+  },
+
+  async checkRegisterStatus() {
+    try {
+      const st = await this.call('auth.registerStatus');
+      if (st.userStatus === 'active') {
+        await this.goHome();
+      } else if (st.request && st.request.status === 'rejected') {
+        const err = document.getElementById('regError');
+        if (err) err.textContent = 'Заявка отклонена: ' + (st.request.comment || '');
+      }
+    } catch (e) {}
+  },
+
+  async handleAction(action, data) {
+    try {
+      switch (action) {
+        case 'logout':
+          try { await this.call('auth.logout'); } catch (e) {}
+          this.clearToken();
+          this.state.session = null;
+          this.navigate('login');
+          break;
+        case 'register':
+          await this.doRegister();
+          break;
+        case 'refreshStatus':
+          await this.checkRegisterStatus();
+          break;
+        case 'back':
+        case 'backToDashboard':
+          this.state.data = await this.call('dashboard.get');
+          this.navigate('dashboard');
+          break;
+        case 'vote':
+          this.state.data = await this.call('voting.get', { id: data.id });
+          this.navigate('voting');
+          break;
+        case 'startBallot':
+          this.state.data = await this.call('voting.getBallot', { id: data.id });
+          this.state.params = { idx: 0, answers: {}, votingId: data.id };
+          this.navigate('ballot');
+          break;
+        case 'ballotNext':
+          this.state.params.idx++;
+          this.render();
+          break;
+        case 'ballotPrev':
+          this.state.params.idx--;
+          this.render();
+          break;
+        case 'ballotFinish':
+          this.state.params.questions = this.state.data.questions;
+          this.navigate('confirm');
+          break;
+        case 'confirmBack':
+          this.state.params.showCodeModal = false;
+          this.navigate('ballot', this.state.params);
+          break;
+        case 'confirmSubmit':
+          await this.call('signature.initiate', { votingId: this.state.params.votingId });
+          this.state.params.showCodeModal = true;
+          this.render();
+          break;
+        case 'codeCancel':
+          this.state.params.showCodeModal = false;
+          this.render();
+          break;
+        case 'codeSubmit':
+          await this.submitWithCode();
+          break;
+        case 'results':
+          this.state.data = await this.call('voting.getResults', { id: data.id });
+          this.navigate('results');
+          break;
+        case 'navInitiator':
+          this.state.data = await this.call('initiator.listVotings');
+          this.navigate('initiator');
+          break;
+        case 'navAdmin':
+          this.state.data = await this.call('admin.dashboard');
+          this.navigate('admin');
+          break;
+        case 'adminBack':
+          this.state.data = await this.call('admin.dashboard');
+          this.navigate('admin');
+          break;
+        case 'adminRequests':
+          this.state.data = await this.call('admin.listRequests');
+          this.navigate('adminRequests');
+          break;
+        case 'adminProperties':
+          this.state.data = await this.call('admin.listProperties');
+          this.navigate('adminProperties');
+          break;
+        case 'adminUsers':
+          this.state.data = await this.call('admin.listUsers');
+          this.navigate('adminUsers');
+          break;
+        case 'adminSettings':
+          this.state.data = await this.call('admin.getSettings');
+          this.navigate('adminSettings');
+          break;
+        case 'adminLogs':
+          this.state.data = await this.call('admin.getLogs', {});
+          this.navigate('adminLogs');
+          break;
+        case 'approve':
+          await this.call('admin.approveRequest', { id: data.id });
+          this.state.data = await this.call('admin.listRequests');
+          this.render();
+          break;
+        case 'reject': {
+          const comment = prompt('Причина отклонения:');
+          if (comment !== null) {
+            await this.call('admin.rejectRequest', { id: data.id, comment: comment });
+            this.state.data = await this.call('admin.listRequests');
+            this.render();
+          }
+          break;
+        }
+        case 'createVoting':
+          this.state.data = { questions: [{ text: '', project: '' }] };
+          this.navigate('initiatorCreate');
+          break;
+        case 'addQuestion':
+          if (!this.state.data) this.state.data = { questions: [] };
+          this.state.data.questions.push({ text: '', project: '' });
+          this.render();
+          break;
+        case 'removeQuestion':
+          this.state.data.questions.splice(parseInt(data.idx, 10), 1);
+          this.render();
+          break;
+        case 'saveVoting':
+          await this.saveVoting();
+          break;
+        case 'publish':
+          await this.call('initiator.publishVoting', { id: data.id });
+          this.state.data = await this.call('initiator.listVotings');
+          this.render();
+          break;
+        case 'monitor':
+          this.state.data = await this.call('initiator.monitorVoting', { id: data.id });
+          this.navigate('monitor');
+          break;
+        case 'remindAll':
+          await this.call('initiator.remind', { id: data.id });
+          alert('Напоминания отправлены');
+          break;
+        case 'finalize':
+          if (confirm('Завершить голосование и сформировать протокол?')) {
+            const p = await this.call('initiator.finalizeVoting', { id: data.id });
+            alert('Протокол сформирован');
+            if (p && p.pdfUrl) window.open(p.pdfUrl, '_blank');
+            this.state.data = await this.call('initiator.listVotings');
+            this.navigate('initiator');
+          }
+          break;
+        case 'protocol':
+          try {
+            const pr = await this.call('initiator.getProtocol', { id: data.id });
+            window.open(pr.pdfUrl, '_blank');
+          } catch (e) { alert(e.message); }
+          break;
+        case 'editProperty': {
+          const list = this.state.data || [];
+          const p = data.id ? list.find(x => x.id === data.id) : { owners_count: 1 };
+          this.state.params.editProperty = p || {};
+          this.render();
+          break;
+        }
+        case 'propCancel':
+          this.state.params.editProperty = null;
+          this.render();
+          break;
+        case 'propSave':
+          await this.saveProperty(data.id);
+          break;
+        case 'deleteProperty':
+          if (confirm('Удалить квартиру?')) {
+            try {
+              await this.call('admin.deleteProperty', { id: data.id });
+              this.state.data = await this.call('admin.listProperties');
+              this.render();
+            } catch (e) { alert(e.message); }
+          }
+          break;
+        case 'exportProperties':
+          await this.doExport('properties');
+          break;
+        case 'saveSettings':
+          await this.saveSettings();
+          break;
+      }
+    } catch (err) {
+      alert('Ошибка: ' + err.message);
+    }
+  },
+
+  handleVote(vote, qid) {
+    this.state.params.answers = this.state.params.answers || {};
+    this.state.params.answers[qid] = vote;
+    this.render();
+  },
+
+  async doRegister() {
+    const fio = document.getElementById('regFio').value.trim();
+    const prop = document.getElementById('regProperty').value.trim();
+    const errEl = document.getElementById('regError');
+    errEl.textContent = '';
+    if (!fio || !prop) { errEl.textContent = 'Заполните все поля'; return; }
+    try {
+      await this.call('auth.register', { fio: fio, propertyNumber: prop });
+      this.navigate('registerStatus');
+    } catch (e) {
+      errEl.textContent = e.message;
+    }
+  },
+
+  async submitWithCode() {
+    const code = document.getElementById('confirmCode').value;
+    try {
+      await this.call('signature.confirm', {
+        votingId: this.state.params.votingId,
+        code: code
+      });
+      const result = await this.call('voting.submit', {
+        votingId: this.state.params.votingId,
+        answers: this.state.params.answers
+      });
+      this.state.data = result;
+      this.navigate('success');
+    } catch (err) {
+      document.getElementById('codeError').textContent = err.message;
+    }
+  },
+
+  async saveVoting() {
+    const questions = (this.state.data && this.state.data.questions) || [];
+    const v = {
+      title: document.getElementById('vTitle').value,
+      start_date: document.getElementById('vStart').value,
+      end_date: document.getElementById('vEnd').value,
+      count_date: document.getElementById('vCount').value,
+      questions: questions.filter(q => q.text && q.text.trim())
+    };
+    try {
+      await this.call('initiator.createVoting', { voting: v });
+      this.state.data = await this.call('initiator.listVotings');
+      this.navigate('initiator');
+    } catch (err) {
+      document.getElementById('createError').textContent = err.message;
+    }
+  },
+
+  async saveProperty(id) {
+    const property = {
+      id: id || '',
+      number: document.getElementById('pNumber').value.trim(),
+      area: parseFloat(document.getElementById('pArea').value),
+      share: document.getElementById('pShare').value.trim(),
+      owners_count: parseInt(document.getElementById('pOwners').value, 10) || 0
+    };
+    try {
+      await this.call('admin.saveProperty', { property: property });
+      this.state.params.editProperty = null;
+      this.state.data = await this.call('admin.listProperties');
+      this.render();
+    } catch (err) {
+      document.getElementById('propError').textContent = err.message;
+    }
+  },
+
+  async doExport(type) {
+    try {
+      const csv = await this.call('admin.exportData', { type: type });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = type + '_' + new Date().toISOString().slice(0, 10) + '.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) { alert(e.message); }
+  },
+
+  async saveSettings() {
+    const payload = {
+      app_title: document.getElementById('setTitle').value,
+      quorum_threshold: document.getElementById('setQuorum').value,
+      approval_threshold: document.getElementById('setApproval').value,
+      signature_provider: document.getElementById('setSignProvider').value,
+      telegram_bot_token: document.getElementById('setTgToken').value,
+      telegram_bot_username: document.getElementById('setTgUsername').value,
+      telegram_webhook_secret: document.getElementById('setTgSecret').value
+    };
+    try {
+      this.state.data = await this.call('admin.saveSettings', payload);
+      alert('Сохранено');
+      this.render();
+    } catch (e) { alert(e.message); }
+  }
+};
+
+function onTelegramAuth(user) {
+  App.callPublic('telegram.verifyLogin', user)
+    .then(result => {
+      App.state.session = { token: result.token, ...result.user };
+      App.saveToken(result.token);
+      if (result.user.status === 'active' || result.user.role === 'admin') {
+        return App.goHome();
+      }
+      App.navigate('register');
+    })
+    .catch(err => {
+      const el = document.getElementById('loginError');
+      if (el) el.textContent = 'Ошибка входа: ' + err.message;
+      else alert('Ошибка входа: ' + err.message);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => App.init());
