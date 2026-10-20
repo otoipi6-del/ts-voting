@@ -101,13 +101,13 @@ const App = {
   },
 
   renderConfirm() {
-    const { answers, questions } = this.state.params;
+    const { answers, questions, votingId } = this.state.params;
     if (!questions) return '<div class="container"><p>Ошибка: вопросы не найдены</p></div>';
     const rows = questions.map((q, i) => {
       const a = answers[q.id], label = a === 'for' ? '✅ ЗА' : a === 'against' ? '❌ ПРОТИВ' : '⬜ ВОЗД.';
       return `<tr><td>${i + 1}</td><td>${this.esc(q.text)}</td><td>${label}</td></tr>`;
     }).join('');
-    return `${this.renderNav()}<div class="container"><h1>Проверьте ваш бюллетень</h1><div class="card table-wrap"><table class="table"><thead><tr><th>№</th><th>Вопрос</th><th>Ваш ответ</th></tr></thead><tbody>${rows}</tbody></table></div><p class="error">⚠️ После подписания изменить ответы будет невозможно</p><div class="flex mt"><button class="btn btn-secondary" data-action="confirmBack">Вернуться</button><button class="btn btn-primary" data-action="confirmSubmit">Подписать и отправить</button></div></div>${this.state.params.showCodeModal ? this.renderCodeModal() : ''}`;
+    return `${this.renderNav()}<div class="container"><h1>Проверьте ваш бюллетень</h1><div class="card table-wrap"><table class="table"><thead><tr><th>№</th><th>Вопрос</th><th>Ваш ответ</th></tr></thead><tbody>${rows}</tbody></table></div><p class="error">⚠️ После подписания изменить ответы будет невозможно</p><div class="flex mt"><button class="btn btn-secondary" data-action="confirmBack">Вернуться</button><button class="btn btn-primary" data-action="confirmSubmit" data-votingid="${votingId}">Подписать и отправить</button></div></div>${this.state.params.showCodeModal ? this.renderCodeModal() : ''}`;
   },
 
   renderCodeModal() {
@@ -269,7 +269,11 @@ const App = {
           this.navigate('ballot'); break;
         case 'ballotNext': this.state.params.idx++; this.render(); break;
         case 'ballotPrev': this.state.params.idx--; this.render(); break;
-        case 'ballotFinish': this.state.params.questions = this.state.data.questions; this.state.params.votingTitle = this.state.data.voting.title; this.navigate('confirm', this.state.params); break;
+        case 'ballotFinish':
+          this.state.params.questions = this.state.data.questions;
+          this.state.params.votingTitle = this.state.data.voting.title;
+          this.state.params.votingId = this.state.params.votingId || data.id || this.state.data.voting.id;
+          this.navigate('confirm', this.state.params); break;
         case 'confirmBack': this.state.params.showCodeModal = false; this.navigate('ballot', this.state.params); break;
         case 'confirmSubmit':
           await this.call('signature.initiate', { votingId: this.state.params.votingId });
