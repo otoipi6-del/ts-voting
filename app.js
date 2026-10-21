@@ -32,19 +32,9 @@ const App = {
   loadToken() { try { return localStorage.getItem('ts_token'); } catch (e) { return null; } },
   clearToken() { try { localStorage.removeItem('ts_token'); } catch (e) {} },
 
-  // Черновики
-  loadDraft() { 
-    try { 
-      const d = localStorage.getItem('voting_draft'); 
-      return d ? JSON.parse(d) : null; 
-    } catch (e) { return null; } 
-  },
-  saveDraft(draft) { 
-    try { localStorage.setItem('voting_draft', JSON.stringify(draft)); } catch (e) {} 
-  },
-  clearDraft() { 
-    try { localStorage.removeItem('voting_draft'); } catch (e) {} 
-  },
+  loadDraft() { try { const d = localStorage.getItem('voting_draft'); return d ? JSON.parse(d) : null; } catch (e) { return null; } },
+  saveDraft(draft) { try { localStorage.setItem('voting_draft', JSON.stringify(draft)); } catch (e) {} },
+  clearDraft() { try { localStorage.removeItem('voting_draft'); } catch (e) {} },
 
   navigate(page, params) { this.state.page = page; this.state.params = params || {}; this.render(); },
 
@@ -194,7 +184,7 @@ const App = {
 
   renderAdmin() {
     const d = this.state.data || {};
-    return `${this.renderNav()}<div class="container"><h1>Админ-панель</h1><div class="row mb"><div class="card center"><h2>${d.propertiesCount || 0}</h2><p class="muted">квартир</p></div><div class="card center"><h2>${d.usersCount || 0}</h2><p class="muted">пользователей</p></div><div class="card center"><h2>${d.activeUsers || 0}</h2><p class="muted">подтверждено</p></div><div class="card center"><h2>${d.pendingRequests || 0}</h2><p class="muted">заявок</p></div></div><div class="card"><button class="btn btn-primary btn-block mb" data-action="adminRequests">Заявки</button><button class="btn btn-secondary btn-block mb" data-action="adminProperties">Квартиры</button><button class="btn btn-secondary btn-block mb" data-action="adminUsers">Пользователи</button><button class="btn btn-secondary btn-block mb" data-action="adminVotings">Голосования</button><button class="btn btn-secondary btn-block mb" data-action="adminLogs">Журнал</button><button class="btn btn-secondary btn-block" data-action="adminSettings">Настройки</button></div></div>`;
+    return `${this.renderNav()}<div class="container"><h1>Админ-панель</h1><div class="row mb"><div class="card center"><h2>${d.propertiesCount || 0}</h2><p class="muted">квартир</p></div><div class="card center"><h2>${d.usersCount || 0}</h2><p class="muted">пользователей</p></div><div class="card center"><h2>${d.activeUsers || 0}</h2><p class="muted">подтверждено</p></div><div class="card center"><h2>${d.pendingRequests || 0}</h2><p class="muted">заявок</p></div></div><div class="card"><button class="btn btn-secondary btn-block mb" data-action="adminRequests">Заявки</button><button class="btn btn-secondary btn-block mb" data-action="adminProperties">Квартиры</button><button class="btn btn-secondary btn-block mb" data-action="adminUsers">Пользователи</button><button class="btn btn-secondary btn-block mb" data-action="adminVotings">Голосования</button><button class="btn btn-secondary btn-block mb" data-action="adminLogs">Журнал</button><button class="btn btn-secondary btn-block" data-action="adminSettings">Настройки</button></div></div>`;
   },
 
   renderAdminVotings() {
@@ -260,20 +250,13 @@ const App = {
     document.querySelectorAll('[data-action]').forEach(el => el.addEventListener('click', () => self.handleAction(el.dataset.action, el.dataset)));
     document.querySelectorAll('[data-vote]').forEach(el => el.addEventListener('click', () => self.handleVote(el.dataset.vote, el.dataset.qid)));
     
-    // Сохранение черновика при вводе и загрузка при старте
     if (this.state.page === 'initiatorCreate') {
       const draft = this.state.params.draft || { questions: [{}] };
-      
-      // Загрузка сохраненных значений в поля (как в твоем файле — явно)
       const fields = { title: 'vTitle', start_date: 'vStart', end_date: 'vEnd', count_date: 'vCount' };
       Object.keys(fields).forEach(key => {
         const el = document.getElementById(fields[key]);
-        if (el && draft[key] !== undefined) {
-          el.value = draft[key] || '';
-        }
+        if (el && draft[key] !== undefined) el.value = draft[key] || '';
       });
-      
-      // Добавляем слушатели для сохранения
       Object.keys(fields).forEach(key => {
         const el = document.getElementById(fields[key]);
         if (el) el.addEventListener('input', () => { 
@@ -282,7 +265,6 @@ const App = {
           self.saveDraft(draft);
         });
       });
-      
       document.querySelectorAll('[data-qfield]').forEach(el => {
         el.addEventListener('input', () => {
           const idx = parseInt(el.dataset.idx, 10), field = el.dataset.qfield;
@@ -375,7 +357,6 @@ const App = {
           break;
         }
         case 'createVoting': 
-          // Загружаем сохраненный черновик
           const savedDraft = this.loadDraft();
           this.state.params.draft = savedDraft || { questions: [{ text: '', project: '' }] };
           this.navigate('initiatorCreate'); 
