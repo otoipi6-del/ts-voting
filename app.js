@@ -418,6 +418,10 @@ const App = {
   async saveVoting() {
     const draft = this.state.params.draft || {};
     const questions = draft.questions || [];
+    
+    // Если дата подсчёта не указана, ставим её равной дате окончания
+    if (!draft.count_date && draft.end_date) draft.count_date = draft.end_date;
+
     const v = { 
       title: draft.title, 
       start_date: draft.start_date, 
@@ -427,7 +431,7 @@ const App = {
     };
     try { 
       await this.call('initiator.createVoting', { voting: v }); 
-      localStorage.removeItem('voting_draft'); // Очищаем черновик после успешного сохранения
+      localStorage.removeItem('voting_draft');
       this.state.data = await this.call('initiator.listVotings'); 
       this.navigate('adminVotings'); 
     } catch (err) { document.getElementById('createError').textContent = err.message; }
