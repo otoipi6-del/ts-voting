@@ -32,6 +32,10 @@ const App = {
   loadToken() { try { return localStorage.getItem('ts_token'); } catch (e) { return null; } },
   clearToken() { try { localStorage.removeItem('ts_token'); } catch (e) {} },
 
+  loadDraft() { try { const d = localStorage.getItem('voting_draft'); return d ? JSON.parse(d) : null; } catch (e) { return null; } },
+  saveDraft(draft) { try { localStorage.setItem('voting_draft', JSON.stringify(draft)); } catch (e) {} },
+  clearDraft() { try { localStorage.removeItem('voting_draft'); } catch (e) {} },
+
   navigate(page, params) { this.state.page = page; this.state.params = params || {}; this.render(); },
 
   async init() {
@@ -254,8 +258,7 @@ const App = {
         if (el) el.addEventListener('input', () => { 
           draft[key] = el.value; 
           self.state.params.draft = draft;
-          // Сохраняем в localStorage при каждом вводе
-          try { localStorage.setItem('voting_draft', JSON.stringify(draft)); } catch(e) {}
+          self.saveDraft(draft);
         });
       });
       document.querySelectorAll('[data-qfield]').forEach(el => el.addEventListener('input', () => {
@@ -263,8 +266,7 @@ const App = {
         if (!draft.questions) draft.questions = [];
         draft.questions[idx] = draft.questions[idx] || {};
         draft.questions[idx][field] = el.value;
-        // Сохраняем в localStorage при каждом вводе
-        try { localStorage.setItem('voting_draft', JSON.stringify(draft)); } catch(e) {}
+        self.saveDraft(draft);
       }));
     }
 
@@ -349,9 +351,9 @@ const App = {
           break;
         }
         case 'createVoting': 
-          let draft = null;
-          try { draft = JSON.parse(localStorage.getItem('voting_draft')); } catch(e) {}
-          this.state.params.draft = draft || { questions: [{ text: '', project: '' }] };
+          // Загружаем сохраненный черновик
+          const savedDraft = this.loadDraft();
+          this.state.params.draft = savedDraft || { questions: [{ text: '', project: '' }] };
           this.navigate('initiatorCreate'); 
           break;
         case 'editVoting': {
@@ -361,8 +363,7 @@ const App = {
           const votingData = await this.call('voting.get', { id: data.id });
           draft.questions = votingData.questions.map(q => ({ text: q.text, project: q.project }));
           this.state.params.draft = draft;
-          // Сохраняем в localStorage
-          try { localStorage.setItem('voting_draft', JSON.stringify(draft)); } catch(e) {}
+          this.saveDraft(draft);
           this.navigate('initiatorCreate');
           break;
         }
@@ -370,10 +371,12 @@ const App = {
           if (!this.state.params.draft) this.state.params.draft = { questions: [] };
           if (!this.state.params.draft.questions) this.state.params.draft.questions = [];
           this.state.params.draft.questions.push({ text: '', project: '' }); 
+          this.saveDraft(this.state.params.draft);
           this.render(); 
           break;
         case 'removeQuestion': 
           this.state.params.draft.questions.splice(parseInt(data.idx, 10), 1); 
+          this.saveDraft(this.state.params.draft);
           this.render(); 
           break;
         case 'saveVoting': await this.saveVoting(); break;
@@ -463,7 +466,7 @@ const App = {
 
     try { 
       await this.call('initiator.createVoting', { voting: v }); 
-      localStorage.removeItem('voting_draft');
+      this.clearDraft();
       this.state.data = await this.call('initiator.listVotings'); 
       this.navigate('adminVotings'); 
     } catch (err) { document.getElementById('createError').textContent = err.message; }
