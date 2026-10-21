@@ -88,7 +88,7 @@ const App = {
     const d = this.state.data || {};
     const active = (d.active || []).map(v => {
       const percent = v.totalUsers ? Math.round(v.votedCount / v.totalUsers * 100) : 0;
-      return `<div class="card"><h3>${this.esc(v.title)}</h3><p class="muted">До ${this.formatDate(v.end_date)}</p><div class="progress mt mb"><div class="progress-bar" style="width:${percent}%"></div></div><p class="muted mb">Проголосовало ${v.votedCount} из ${v.totalUsers}</p><button class="btn btn-primary btn-block" data-action="${v.voted ? 'results' : 'vote'}" data-id="${v.id}">${v.voted ? 'Посмотреть результаты' : 'Открыть'}</button></div>`;
+      return `<div class="card"><h3>${this.esc(v.title)}</h3><p class="muted">Начало: ${this.formatDate(v.start_date)} | Окончание: ${this.formatDate(v.end_date)}</p><div class="progress mt mb"><div class="progress-bar" style="width:${percent}%"></div></div><p class="muted mb">Проголосовало ${v.votedCount} из ${v.totalUsers}</p><button class="btn ${v.voted ? 'btn-secondary' : 'btn-primary'} btn-block" data-action="${v.voted ? 'results' : 'vote'}" data-id="${v.id}">${v.voted ? 'Посмотреть результаты' : 'Открыть'}</button></div>`;
     }).join('') || '<p class="muted">Активных голосований нет</p>';
     return `${this.renderNav()}<div class="container"><h1>Здравствуйте, ${this.esc(d.user ? d.user.fio : '')}!</h1><h2>Активные голосования</h2>${active}</div>`;
   },
@@ -96,8 +96,20 @@ const App = {
   renderVoting() {
     const v = this.state.data;
     if (!v) return '<div class="container"><p>Загрузка...</p></div>';
-    const questions = v.questions.map(q => `<div class="card"><h3>${q.order}. ${this.esc(q.text)}</h3>${q.project ? '<p class="muted">Проект: ' + this.esc(q.project) + '</p>' : ''}</div>`).join('');
-    return `${this.renderNav()}<div class="container"><button class="btn btn-secondary btn-sm mb" data-action="back">← Назад</button><h1>${this.esc(v.title)}</h1><p class="muted mb">До ${this.formatDate(v.end_date)}</p><h2>Повестка дня</h2>${questions}${v.voted ? '<button class="btn btn-secondary btn-block mt" data-action="results" data-id="' + v.id + '">Посмотреть результаты</button>' : '<button class="btn btn-primary btn-block mt" data-action="startBallot" data-id="' + v.id + '">Перейти к голосованию</button>'}</div>`;
+    const questions = v.questions.map(q => `<div class="card" style="padding:12px;"><h3>${q.order}. ${this.esc(q.text)}</h3>${q.project ? '<p class="muted">Проект: ' + this.esc(q.project) + '</p>' : ''}</div>`).join('');
+    return `${this.renderNav()}<div class="container"><button class="btn btn-secondary btn-sm mb" data-action="back">← Назад</button>
+      <div class="card" style="background:#F3F4F6;">
+        <p><strong>Начало:</strong> ${this.formatDate(v.start_date)}</p>
+        <p><strong>Окончание:</strong> ${this.formatDate(v.end_date)}</p>
+        <p><strong>Подсчёт:</strong> ${this.formatDate(v.count_date)}</p>
+      </div>
+      <h1>${this.esc(v.title)}</h1>
+      <h2>Повестка дня:</h2>
+      <div class="mb">${v.questions[0] ? v.questions[0].text : 'Не указана'}</div>
+      <h2>Перечень вопросов:</h2>
+      ${questions}
+      ${v.voted ? '<button class="btn btn-secondary btn-block mt" data-action="results" data-id="' + v.id + '">Посмотреть результаты</button>' : '<button class="btn btn-primary btn-block mt" data-action="startBallot" data-id="' + v.id + '">Перейти к голосованию</button>'}
+    </div>`;
   },
 
   renderBallot() {
@@ -130,8 +142,14 @@ const App = {
   renderResults() {
     const r = this.state.data;
     if (!r) return '<div class="container"><p>Загрузка...</p></div>';
-    const blocks = r.results.map(q => `<div class="card"><h3>Вопрос ${q.order}</h3><p>${this.esc(q.text)}</p><div class="mt"><p>✅ За: ${q.counts.for} (${q.areas.for} м²) — ${q.forPercent}%</p><div class="progress mb"><div class="progress-bar" style="width:${q.forPercent}%; background:#16A34A;"></div></div><p>❌ Против: ${q.counts.against} (${q.areas.against} м²)</p><p>⬜ Воздержался: ${q.counts.abstain} (${q.areas.abstain} м²)</p></div><p class="mt"><span class="badge ${q.accepted ? 'badge-success' : 'badge-danger'}">${q.accepted ? 'ПРИНЯТО' : 'НЕ ПРИНЯТО'}</span></p></div>`).join('');
-    return `${this.renderNav()}<div class="container"><button class="btn btn-secondary btn-sm mb" data-action="back">← Назад</button><h1>Результаты: ${this.esc(r.voting.title)}</h1><div class="card"><p>Кворум: ${r.quorum.percent}% (порог ${r.quorum.threshold}%) <span class="badge ${r.quorum.reached ? 'badge-success' : 'badge-danger'}">${r.quorum.reached ? 'ДОСТИГНУТ' : 'НЕ ДОСТИГНУТ'}</span></p><p class="muted">Проголосовало: ${r.votedCount} из ${r.totalProperties} помещений</p></div>${blocks}</div>`;
+    const blocks = r.results.map(q => `<div class="card"><h3>Вопрос ${q.order}: ${this.esc(q.text)}</h3><div class="mt"><p>✅ За: ${q.counts.for} (${q.areas.for} м²) — ${q.forPercent}%</p><div class="progress mb"><div class="progress-bar" style="width:${q.forPercent}%; background:#16A34A;"></div></div><p>❌ Против: ${q.counts.against} (${q.areas.against} м²)</p><p>⬜ Воздержался: ${q.counts.abstain} (${q.areas.abstain} м²)</p></div><p class="mt"><span class="badge ${q.accepted ? 'badge-success' : 'badge-danger'}">${q.accepted ? 'ПРИНЯТО' : 'НЕ ПРИНЯТО'}</span></p></div>`).join('');
+    return `${this.renderNav()}<div class="container"><button class="btn btn-secondary btn-sm mb" data-action="back">← Назад</button>
+      <div class="card" style="background:#F3F4F6;">
+        <p><strong>Начало:</strong> ${this.formatDate(r.voting.start_date)}</p>
+        <p><strong>Окончание:</strong> ${this.formatDate(r.voting.end_date)}</p>
+        <p><strong>Подсчёт:</strong> ${this.formatDate(r.voting.count_date)}</p>
+      </div>
+      <h1>Результаты: ${this.esc(r.voting.title)}</h1><div class="card"><p>Кворум: ${r.quorum.percent}% (порог ${r.quorum.threshold}%) <span class="badge ${r.quorum.reached ? 'badge-success' : 'badge-danger'}">${r.quorum.reached ? 'ДОСТИГНУТ' : 'НЕ ДОСТИГНУТ'}</span></p><p class="muted">Проголосовало: ${r.votedCount} из ${r.totalProperties} помещений</p></div>${blocks}</div>`;
   },
 
   renderInitiator() {
@@ -141,16 +159,23 @@ const App = {
   },
 
   renderInitiatorCreate() {
-    const qs = (this.state.data && this.state.data.questions) || [];
+    const draft = this.state.params.draft || {};
+    const qs = draft.questions || [{ text: '', project: '' }];
     const qHtml = qs.map((q, i) => `<div class="card" style="background:#F9FAFB;"><div class="flex between mb"><strong>Вопрос ${i + 1}</strong><button class="btn btn-danger btn-sm" data-action="removeQuestion" data-idx="${i}">×</button></div><label class="label">Текст вопроса</label><textarea class="textarea" data-qfield="text" data-idx="${i}">${this.esc(q.text || '')}</textarea><label class="label">Проект решения</label><textarea class="textarea" data-qfield="project" data-idx="${i}">${this.esc(q.project || '')}</textarea></div>`).join('');
-    return `${this.renderNav()}<div class="container"><button class="btn btn-secondary btn-sm mb" data-action="adminBack">← Назад</button><h1>Создание голосования</h1><div class="card"><label class="label">Название</label><input class="input" id="vTitle" placeholder="Утверждение сметы на 2026 год"><label class="label">Дата начала</label><input class="input" id="vStart" type="datetime-local"><label class="label">Дата окончания</label><input class="input" id="vEnd" type="datetime-local"><label class="label">Дата подсчёта</label><input class="input" id="vCount" type="datetime-local"></div><div class="card"><h3>Вопросы повестки</h3><div id="questionsList">${qHtml}</div><button class="btn btn-secondary mt" data-action="addQuestion">+ Добавить вопрос</button></div><div id="createError" class="error"></div><button class="btn btn-primary btn-block mt" data-action="saveVoting">Сохранить как черновик</button></div>`;
+    return `${this.renderNav()}<div class="container"><button class="btn btn-secondary btn-sm mb" data-action="adminBack">← Назад</button><h1>Создание голосования</h1><div class="card"><label class="label">Название</label><input class="input" id="vTitle" value="${this.esc(draft.title || '')}" placeholder="Утверждение сметы на 2026 год"><label class="label">Дата начала</label><input class="input" id="vStart" type="datetime-local" value="${draft.start_date || ''}"><label class="label">Дата окончания</label><input class="input" id="vEnd" type="datetime-local" value="${draft.end_date || ''}"><label class="label">Дата подсчёта</label><input class="input" id="vCount" type="datetime-local" value="${draft.count_date || ''}"></div><div class="card"><h3>Вопросы повестки</h3><div id="questionsList">${qHtml}</div><button class="btn btn-secondary mt" data-action="addQuestion">+ Добавить вопрос</button></div><div id="createError" class="error"></div><button class="btn btn-primary btn-block mt" data-action="saveVoting">Сохранить как черновик</button></div>`;
   },
 
   renderMonitor() {
     const m = this.state.data;
     if (!m) return '<div class="container"><p>Загрузка...</p></div>';
     const rows = m.voters.map(v => `<tr><td>${this.esc(v.property_number)}</td><td>${this.esc(v.fio)}</td><td>${v.property_area} м²</td><td>${v.voted ? '✅' : '⏳'}</td></tr>`).join('');
-    return `${this.renderNav()}<div class="container"><button class="btn btn-secondary btn-sm mb" data-action="navInitiator">← Назад</button><h1>${this.esc(m.voting.title)}</h1><div class="card"><p>Проголосовало: ${m.stats.votedCount} из ${m.stats.totalUsers}</p><div class="progress mb"><div class="progress-bar" style="width:${m.stats.totalArea ? m.stats.votedArea / m.stats.totalArea * 100 : 0}%"></div></div><p>Площадь: ${m.stats.votedArea.toFixed(1)} из ${m.stats.totalArea.toFixed(1)} м²</p><p>Кворум: <span class="badge ${m.stats.quorumReached ? 'badge-success' : 'badge-warn'}">${m.stats.quorumReached ? 'достигнут' : 'не достигнут'}</span></p><div class="flex mt"><button class="btn btn-secondary" data-action="remindAll" data-id="${m.voting.id}">Напомнить всем</button><button class="btn btn-primary" data-action="finalize" data-id="${m.voting.id}">Завершить</button></div></div><div class="card table-wrap"><table class="table"><thead><tr><th>Кв.</th><th>Собственник</th><th>Площадь</th><th>Статус</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    return `${this.renderNav()}<div class="container"><button class="btn btn-secondary btn-sm mb" data-action="navInitiator">← Назад</button>
+      <div class="card" style="background:#F3F4F6;">
+        <p><strong>Начало:</strong> ${this.formatDate(m.voting.start_date)}</p>
+        <p><strong>Окончание:</strong> ${this.formatDate(m.voting.end_date)}</p>
+        <p><strong>Подсчёт:</strong> ${this.formatDate(m.voting.count_date)}</p>
+      </div>
+      <h1>${this.esc(m.voting.title)}</h1><div class="card"><p>Проголосовало: ${m.stats.votedCount} из ${m.stats.totalUsers}</p><div class="progress mb"><div class="progress-bar" style="width:${m.stats.totalArea ? m.stats.votedArea / m.stats.totalArea * 100 : 0}%"></div></div><p>Площадь: ${m.stats.votedArea.toFixed(1)} из ${m.stats.totalArea.toFixed(1)} м²</p><p>Кворум: <span class="badge ${m.stats.quorumReached ? 'badge-success' : 'badge-warn'}">${m.stats.quorumReached ? 'достигнут' : 'не достигнут'}</span></p><div class="flex mt"><button class="btn btn-secondary" data-action="remindAll" data-id="${m.voting.id}">Напомнить всем</button><button class="btn btn-primary" data-action="finalize" data-id="${m.voting.id}">Завершить</button></div></div><div class="card table-wrap"><table class="table"><thead><tr><th>Кв.</th><th>Собственник</th><th>Площадь</th><th>Статус</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   },
 
   renderAdmin() {
@@ -220,12 +245,23 @@ const App = {
     const self = this;
     document.querySelectorAll('[data-action]').forEach(el => el.addEventListener('click', () => self.handleAction(el.dataset.action, el.dataset)));
     document.querySelectorAll('[data-vote]').forEach(el => el.addEventListener('click', () => self.handleVote(el.dataset.vote, el.dataset.qid)));
-    document.querySelectorAll('[data-qfield]').forEach(el => el.addEventListener('input', () => {
-      const idx = parseInt(el.dataset.idx, 10), field = el.dataset.qfield;
-      if (!self.state.data) self.state.data = { questions: [] };
-      self.state.data.questions[idx] = self.state.data.questions[idx] || {};
-      self.state.data.questions[idx][field] = el.value;
-    }));
+    
+    // Сохранение черновика при вводе
+    if (this.state.page === 'initiatorCreate') {
+      const draft = this.state.params.draft || { questions: [{}] };
+      const inputs = { title: 'vTitle', start_date: 'vStart', end_date: 'vEnd', count_date: 'vCount' };
+      Object.keys(inputs).forEach(key => {
+        const el = document.getElementById(inputs[key]);
+        if (el) el.addEventListener('input', () => { draft[key] = el.value; self.state.params.draft = draft; });
+      });
+      document.querySelectorAll('[data-qfield]').forEach(el => el.addEventListener('input', () => {
+        const idx = parseInt(el.dataset.idx, 10), field = el.dataset.qfield;
+        if (!draft.questions) draft.questions = [];
+        draft.questions[idx] = draft.questions[idx] || {};
+        draft.questions[idx][field] = el.value;
+      }));
+    }
+
     if (this.state.page === 'login') this.initTelegramWidget();
     if (this.state.page === 'registerStatus') this.checkRegisterStatus();
   },
@@ -306,9 +342,23 @@ const App = {
           if (comment !== null) { await this.call('admin.rejectRequest', { id: data.id, comment: comment }); this.state.data = await this.call('admin.listRequests'); this.render(); }
           break;
         }
-        case 'createVoting': this.state.data = { questions: [{ text: '', project: '' }] }; this.navigate('initiatorCreate'); break;
-        case 'addQuestion': if (!this.state.data) this.state.data = { questions: [] }; this.state.data.questions.push({ text: '', project: '' }); this.render(); break;
-        case 'removeQuestion': this.state.data.questions.splice(parseInt(data.idx, 10), 1); this.render(); break;
+        case 'createVoting': 
+          // Если есть сохраненный черновик, восстанавливаем его
+          let draft = null;
+          try { draft = JSON.parse(localStorage.getItem('voting_draft')); } catch(e) {}
+          this.state.params.draft = draft || { questions: [{ text: '', project: '' }] };
+          this.navigate('initiatorCreate'); 
+          break;
+        case 'addQuestion': 
+          if (!this.state.params.draft) this.state.params.draft = { questions: [] };
+          if (!this.state.params.draft.questions) this.state.params.draft.questions = [];
+          this.state.params.draft.questions.push({ text: '', project: '' }); 
+          this.render(); 
+          break;
+        case 'removeQuestion': 
+          this.state.params.draft.questions.splice(parseInt(data.idx, 10), 1); 
+          this.render(); 
+          break;
         case 'saveVoting': await this.saveVoting(); break;
         case 'publish': await this.call('initiator.publishVoting', { id: data.id }); this.state.data = await this.call('initiator.listVotings'); this.render(); break;
         case 'monitor': this.state.data = await this.call('initiator.monitorVoting', { id: data.id }); this.navigate('monitor'); break;
@@ -341,7 +391,11 @@ const App = {
     } catch (err) { alert('Ошибка: ' + err.message); }
   },
 
-  handleVote(vote, qid) { this.state.params.answers = this.state.params.answers || {}; this.state.params.answers[qid] = vote; this.render(); },
+  handleVote(vote, qid) { 
+    this.state.params.answers = this.state.params.answers || {}; 
+    this.state.params.answers[qid] = vote; 
+    this.render(); 
+  },
 
   async doRegister() {
     const fio = document.getElementById('regFio').value.trim();
@@ -362,9 +416,21 @@ const App = {
   },
 
   async saveVoting() {
-    const questions = (this.state.data && this.state.data.questions) || [];
-    const v = { title: document.getElementById('vTitle').value, start_date: document.getElementById('vStart').value, end_date: document.getElementById('vEnd').value, count_date: document.getElementById('vCount').value, questions: questions.filter(q => q.text && q.text.trim()) };
-    try { await this.call('initiator.createVoting', { voting: v }); this.state.data = await this.call('initiator.listVotings'); this.navigate('adminVotings'); } catch (err) { document.getElementById('createError').textContent = err.message; }
+    const draft = this.state.params.draft || {};
+    const questions = draft.questions || [];
+    const v = { 
+      title: draft.title, 
+      start_date: draft.start_date, 
+      end_date: draft.end_date, 
+      count_date: draft.count_date, 
+      questions: questions.filter(q => q.text && q.text.trim()) 
+    };
+    try { 
+      await this.call('initiator.createVoting', { voting: v }); 
+      localStorage.removeItem('voting_draft'); // Очищаем черновик после успешного сохранения
+      this.state.data = await this.call('initiator.listVotings'); 
+      this.navigate('adminVotings'); 
+    } catch (err) { document.getElementById('createError').textContent = err.message; }
   },
 
   async saveProperty(id) {
