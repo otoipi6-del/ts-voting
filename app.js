@@ -351,7 +351,6 @@ const App = {
           break;
         }
         case 'createVoting': 
-          // Загружаем сохраненный черновик
           const savedDraft = this.loadDraft();
           this.state.params.draft = savedDraft || { questions: [{ text: '', project: '' }] };
           this.navigate('initiatorCreate'); 
