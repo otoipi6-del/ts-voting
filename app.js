@@ -154,7 +154,7 @@ const App = {
 
   renderInitiator() {
     const list = this.state.data || [];
-    const items = list.map(v => `<div class="card"><h3>${this.esc(v.title)} <span class="badge ${v.status === 'active' ? 'badge-success' : v.status === 'draft' ? 'badge-muted' : 'badge-warn'}">${v.status}</span></h3><p class="muted">${this.formatDate(v.start_date)} — ${this.formatDate(v.end_date)}</p><p class="muted">Проголосовало: ${v.votedCount} из ${v.totalUsers}</p><div class="flex mt">${v.status === 'draft' ? `<button class="btn btn-primary btn-sm" data-action="publish" data-id="${v.id}">Опубликовать</button>` : ''}${v.status === 'active' ? `<button class="btn btn-primary btn-sm" data-action="monitor" data-id="${v.id}">Мониторинг</button>` : ''}${v.status === 'finished' ? `<button class="btn btn-secondary btn-sm" data-action="protocol" data-id="${v.id}">Протокол</button>` : ''}</div></div>`).join('');
+    const items = list.map(v => `<div class="card"><h3>${this.esc(v.title)} <span class="badge ${v.status === 'active' ? 'badge-success' : v.status === 'draft' ? 'badge-muted' : 'badge-warn'}">${v.status}</span></h3><p class="muted">${this.formatDate(v.start_date)} — ${this.formatDate(v.end_date)}</p><p class="muted">Проголосовало: ${v.votedCount} из ${v.totalUsers}</p><div class="flex mt">${v.status === 'draft' ? `<button class="btn btn-primary btn-sm" data-action="publish" data-id="${v.id}">Опубликовать</button><button class="btn btn-secondary btn-sm" data-action="editVoting" data-id="${v.id}">Редактировать</button>` : ''}${v.status === 'active' ? `<button class="btn btn-primary btn-sm" data-action="monitor" data-id="${v.id}">Мониторинг</button>` : ''}${v.status === 'finished' ? `<button class="btn btn-secondary btn-sm" data-action="protocol" data-id="${v.id}">Протокол</button>` : ''}</div></div>`).join('');
     return `${this.renderNav()}<div class="container"><h1>Управление голосованиями</h1><button class="btn btn-primary btn-block mb" data-action="createVoting">+ Создать голосование</button>${items || '<p class="muted">Нет голосований</p>'}</div>`;
   },
 
@@ -185,7 +185,7 @@ const App = {
 
   renderAdminVotings() {
     const list = this.state.data || [];
-    const items = list.map(v => `<div class="card"><h3>${this.esc(v.title)} <span class="badge ${v.status === 'active' ? 'badge-success' : v.status === 'draft' ? 'badge-muted' : 'badge-warn'}">${v.status}</span></h3><p class="muted">${this.formatDate(v.start_date)} — ${this.formatDate(v.end_date)}</p><p class="muted">Проголосовало: ${v.votedCount} из ${v.totalUsers}</p><div class="flex mt">${v.status === 'draft' ? `<button class="btn btn-primary btn-sm" data-action="publish" data-id="${v.id}">Опубликовать</button>` : ''}${v.status === 'active' ? `<button class="btn btn-primary btn-sm" data-action="monitor" data-id="${v.id}">Мониторинг</button>` : ''}${v.status === 'finished' ? `<button class="btn btn-secondary btn-sm" data-action="protocol" data-id="${v.id}">Протокол</button>` : ''}</div></div>`).join('');
+    const items = list.map(v => `<div class="card"><h3>${this.esc(v.title)} <span class="badge ${v.status === 'active' ? 'badge-success' : v.status === 'draft' ? 'badge-muted' : 'badge-warn'}">${v.status}</span></h3><p class="muted">${this.formatDate(v.start_date)} — ${this.formatDate(v.end_date)}</p><p class="muted">Проголосовало: ${v.votedCount} из ${v.totalUsers}</p><div class="flex mt">${v.status === 'draft' ? `<button class="btn btn-primary btn-sm" data-action="publish" data-id="${v.id}">Опубликовать</button><button class="btn btn-secondary btn-sm" data-action="editVoting" data-id="${v.id}">Редактировать</button>` : ''}${v.status === 'active' ? `<button class="btn btn-primary btn-sm" data-action="monitor" data-id="${v.id}">Мониторинг</button>` : ''}${v.status === 'finished' ? `<button class="btn btn-secondary btn-sm" data-action="protocol" data-id="${v.id}">Протокол</button>` : ''}</div></div>`).join('');
     return `${this.renderNav()}<div class="container"><button class="btn btn-secondary btn-sm mb" data-action="adminBack">← Назад</button><h1>Управление голосованиями</h1><button class="btn btn-primary btn-block mb" data-action="createVoting">+ Создать голосование</button>${items || '<p class="muted">Нет голосований</p>'}</div>`;
   },
 
@@ -246,7 +246,6 @@ const App = {
     document.querySelectorAll('[data-action]').forEach(el => el.addEventListener('click', () => self.handleAction(el.dataset.action, el.dataset)));
     document.querySelectorAll('[data-vote]').forEach(el => el.addEventListener('click', () => self.handleVote(el.dataset.vote, el.dataset.qid)));
     
-    // Сохранение черновика при вводе
     if (this.state.page === 'initiatorCreate') {
       const draft = this.state.params.draft || { questions: [{}] };
       const inputs = { title: 'vTitle', start_date: 'vStart', end_date: 'vEnd', count_date: 'vCount' };
@@ -343,12 +342,21 @@ const App = {
           break;
         }
         case 'createVoting': 
-          // Если есть сохраненный черновик, восстанавливаем его
           let draft = null;
           try { draft = JSON.parse(localStorage.getItem('voting_draft')); } catch(e) {}
           this.state.params.draft = draft || { questions: [{ text: '', project: '' }] };
           this.navigate('initiatorCreate'); 
           break;
+        case 'editVoting': {
+          const v = (this.state.data || []).find(x => x.id === data.id);
+          if (!v) { alert('Голосование не найдено'); break; }
+          const draft = { title: v.title, start_date: v.start_date, end_date: v.end_date, count_date: v.count_date, questions: [] };
+          const votingData = await this.call('voting.get', { id: data.id });
+          draft.questions = votingData.questions.map(q => ({ text: q.text, project: q.project }));
+          this.state.params.draft = draft;
+          this.navigate('initiatorCreate');
+          break;
+        }
         case 'addQuestion': 
           if (!this.state.params.draft) this.state.params.draft = { questions: [] };
           if (!this.state.params.draft.questions) this.state.params.draft.questions = [];
@@ -427,12 +435,14 @@ const App = {
       document.getElementById('createError').textContent = 'Ошибка: Укажите даты начала и окончания';
       return;
     }
+    if (!draft.count_date) {
+      document.getElementById('createError').textContent = 'Ошибка: Укажите дату подсчёта';
+      return;
+    }
     if (!questions.filter(q => q.text && q.text.trim()).length) {
       document.getElementById('createError').textContent = 'Ошибка: Добавьте хотя бы один вопрос';
       return;
     }
-
-    if (!draft.count_date && draft.end_date) draft.count_date = draft.end_date;
 
     const v = { 
       title: draft.title, 
@@ -441,6 +451,10 @@ const App = {
       count_date: draft.count_date, 
       questions: questions.filter(q => q.text && q.text.trim()) 
     };
+    
+    // Для отладки: выводим в консоль то, что отправляем
+    console.log('Отправка на сервер:', JSON.stringify(v));
+
     try { 
       await this.call('initiator.createVoting', { voting: v }); 
       localStorage.removeItem('voting_draft');
