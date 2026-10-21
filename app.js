@@ -251,13 +251,20 @@ const App = {
       const inputs = { title: 'vTitle', start_date: 'vStart', end_date: 'vEnd', count_date: 'vCount' };
       Object.keys(inputs).forEach(key => {
         const el = document.getElementById(inputs[key]);
-        if (el) el.addEventListener('input', () => { draft[key] = el.value; self.state.params.draft = draft; });
+        if (el) el.addEventListener('input', () => { 
+          draft[key] = el.value; 
+          self.state.params.draft = draft;
+          // Сохраняем в localStorage при каждом вводе
+          try { localStorage.setItem('voting_draft', JSON.stringify(draft)); } catch(e) {}
+        });
       });
       document.querySelectorAll('[data-qfield]').forEach(el => el.addEventListener('input', () => {
         const idx = parseInt(el.dataset.idx, 10), field = el.dataset.qfield;
         if (!draft.questions) draft.questions = [];
         draft.questions[idx] = draft.questions[idx] || {};
         draft.questions[idx][field] = el.value;
+        // Сохраняем в localStorage при каждом вводе
+        try { localStorage.setItem('voting_draft', JSON.stringify(draft)); } catch(e) {}
       }));
     }
 
@@ -354,6 +361,8 @@ const App = {
           const votingData = await this.call('voting.get', { id: data.id });
           draft.questions = votingData.questions.map(q => ({ text: q.text, project: q.project }));
           this.state.params.draft = draft;
+          // Сохраняем в localStorage
+          try { localStorage.setItem('voting_draft', JSON.stringify(draft)); } catch(e) {}
           this.navigate('initiatorCreate');
           break;
         }
@@ -451,9 +460,6 @@ const App = {
       count_date: draft.count_date, 
       questions: questions.filter(q => q.text && q.text.trim()) 
     };
-    
-    // Для отладки: выводим в консоль то, что отправляем
-    console.log('Отправка на сервер:', JSON.stringify(v));
 
     try { 
       await this.call('initiator.createVoting', { voting: v }); 
