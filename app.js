@@ -419,7 +419,19 @@ const App = {
     const draft = this.state.params.draft || {};
     const questions = draft.questions || [];
     
-    // Если дата подсчёта не указана, ставим её равной дате окончания
+    if (!draft.title || !draft.title.trim()) {
+      document.getElementById('createError').textContent = 'Ошибка: Укажите название голосования';
+      return;
+    }
+    if (!draft.start_date || !draft.end_date) {
+      document.getElementById('createError').textContent = 'Ошибка: Укажите даты начала и окончания';
+      return;
+    }
+    if (!questions.filter(q => q.text && q.text.trim()).length) {
+      document.getElementById('createError').textContent = 'Ошибка: Добавьте хотя бы один вопрос';
+      return;
+    }
+
     if (!draft.count_date && draft.end_date) draft.count_date = draft.end_date;
 
     const v = { 
