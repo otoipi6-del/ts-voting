@@ -15,18 +15,29 @@
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 16px; line-height: 1.5; }
     .container { max-width: 960px; margin: 0 auto; padding: 16px; }
     .card { background: var(--white); border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-    .btn { display: inline-block; padding: 12px 20px; border-radius: 8px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; text-align: center; font-family: inherit; transition: background .15s; }
+    .btn { display: inline-block; padding: 12px 20px; border-radius: 8px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; text-align: center; font-family: inherit; transition: background .15s, opacity .15s; }
     .btn-primary { background: var(--primary); color: #fff; } .btn-primary:hover { background: var(--primary-600); }
     .btn-secondary { background: var(--white); color: var(--primary); border: 1px solid var(--primary); }
     .btn-danger { background: var(--danger); color: #fff; }
     .btn-sm { padding: 8px 14px; font-size: 14px; }
     .btn-block { display: block; width: 100%; }
     .btn:disabled { opacity: .5; cursor: not-allowed; }
+    
+    /* Эффект нажатия (кнопка становится серой) */
+    .btn:active:not(:disabled) { background: #9CA3AF !important; color: #fff !important; border-color: #9CA3AF !important; }
+    
     .btn-vote { flex: 1; padding: 20px; font-size: 17px; border-radius: 10px; }
     .btn-vote.for { background: #DCFCE7; color: #166534; border: 2px solid #16A34A; } .btn-vote.for.selected { background: #16A34A; color: #fff; }
     .btn-vote.against { background: #FEE2E2; color: #991B1B; border: 2px solid #DC2626; } .btn-vote.against.selected { background: #DC2626; color: #fff; }
     .btn-vote.abstain { background: #F3F4F6; color: #4B5563; border: 2px solid #9CA3AF; } .btn-vote.abstain.selected { background: #9CA3AF; color: #fff; }
+    
     .input, .textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; margin-bottom: 12px; font-family: inherit; }
+    
+    /* Серый цвет для календаря и времени */
+    .input[type="datetime-local"] { color: #9CA3AF; }
+    .input[type="datetime-local"]:focus, .input[type="datetime-local"]:valid { color: #111827; }
+    .input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(50%); cursor: pointer; }
+    
     .label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
     .row { display: flex; gap: 12px; flex-wrap: wrap; } .row > * { flex: 1; min-width: 140px; }
     h1 { font-size: 24px; margin-bottom: 16px; } h2 { font-size: 19px; margin-bottom: 12px; } h3 { font-size: 16px; margin-bottom: 8px; }
